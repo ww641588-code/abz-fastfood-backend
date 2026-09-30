@@ -25,7 +25,7 @@ const orderSchema = new mongoose.Schema({
   },
   customer: {
     type: Object,
-    required: true
+    default: {}
   },
   date: {
     type: Date,
@@ -46,7 +46,7 @@ app.post("/orders", async (req, res) => {
     const order = new Order({
       items: req.body.items,
       total: req.body.total,
-      customer: req.body.customer
+      customer: req.body.customer || {}
     });
 
     const savedOrder = await order.save();
