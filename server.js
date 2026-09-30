@@ -1,5 +1,3 @@
-
-
 require("dotenv").config();
 
 const express = require("express");
@@ -7,15 +5,28 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 
 const app = express();
-const PORT = process.env.port || 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
 
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB Connected"))
+  .catch((error) => console.log("MongoDB Error:", error));
+
 const orderSchema = new mongoose.Schema({
-  items: Array,
-  total: Number,
-  customer: Object,
+  items: {
+    type: Array,
+    required: true
+  },
+  total: {
+    type: Number,
+    required: true
+  },
+  customer: {
+    type: Object,
+    required: true
+  },
   date: {
     type: Date,
     default: Date.now
@@ -25,49 +36,54 @@ const orderSchema = new mongoose.Schema({
 const Order = mongoose.model("Order", orderSchema);
 
 app.get("/", (req, res) => {
-  res.send("Food website backend is running 🔥");
+  res.send("ABZ FASTFOOD Backend is Running");
 });
 
 app.post("/orders", async (req, res) => {
   try {
-    const order = await Order.create(req.body);
+    console.log("Order Received:", req.body);
 
-    res.json({
+    const order = new Order({
+      items: req.body.items,
+      total: req.body.total,
+      customer: req.body.customer
+    });
+
+    const savedOrder = await order.save();
+
+    console.log("Order Saved:", savedOrder);
+
+    res.status(201).json({
       success: true,
       message: "Order saved successfully",
-      order: order
+      order: savedOrder
     });
- } catch (error) {
-    console.log("ORDER ERROR ❌", error);
+  } catch (error) {
+    console.error("Order Error:", error);
 
     res.status(500).json({
       success: false,
       message: error.message
     });
-}
+  }
 });
 
 app.get("/orders", async (req, res) => {
   try {
     const orders = await Order.find().sort({ date: -1 });
-    res.json(orders);
+
+    res.json({
+      success: true,
+      orders: orders
+    });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Could not fetch orders"
+      message: error.message
     });
   }
 });
 
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("MongoDB connected successfully ✅");
-
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  })
-  .catch((error) => {
-    console.log("MongoDB connection failed ❌");
-    console.log(error.message);
-  });
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
